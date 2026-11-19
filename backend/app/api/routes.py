@@ -3,11 +3,11 @@ import re
 from datetime import datetime
 from urllib.parse import urlparse
 from typing import Dict, Any, List
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 import httpx
 
-from ..core.config import SCAN_TIMEOUT, USER_AGENT
+from ..core.config import SCAN_TIMEOUT, USER_AGENT, DEMO_MODE
 from ..scanners.tls_scanner import scan_tls
 from ..scanners.headers_scanner import scan_security_headers
 from ..scanners.cookie_scanner import scan_cookies
@@ -36,10 +36,31 @@ def sanitize_url(raw_url: str) -> str:
     # (Allow loopback for mock test server demonstration)
     return cleaned
 
+# Hosted demo: the public deployment only scans its own built-in test bench, so it
+# can never be used to probe third-party sites.
+DEMO_TARGETS = {"/mock/hardened", "/mock/balanced", "/mock/vulnerable"}
+
+
+def resolve_demo_target(target_url: str, base_url: str) -> str:
+    """Map a test-bench URL (any host, e.g. the UI's 127.0.0.1:8000 presets) onto this server."""
+    path = urlparse(target_url).path.rstrip("/")
+    if path not in DEMO_TARGETS:
+        raise ValueError(
+            "The hosted demo only scans the built-in test bench: /mock/hardened, /mock/balanced "
+            "or /mock/vulnerable. Run CyberSentinel locally to audit sites you are authorised to test."
+        )
+    base = urlparse(base_url)
+    local = base.hostname in ("127.0.0.1", "localhost")
+    scheme = base.scheme if local else "https"
+    return f"{scheme}://{base.netloc}{path}"
+
+
 @api_router.post("/scan")
-async def execute_scan(req: ScanRequest) -> Dict[str, Any]:
+async def execute_scan(req: ScanRequest, request: Request) -> Dict[str, Any]:
     try:
         target_url = sanitize_url(req.target_url)
+        if DEMO_MODE:
+            target_url = resolve_demo_target(target_url, str(request.base_url))
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
 

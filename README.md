@@ -29,6 +29,13 @@ Double-click `run.bat` or run the following command in PowerShell:
 ```
 Open your browser and navigate to: `http://127.0.0.1:8000`
 
+## Hosted demo (test bench only)
+A public copy runs at **https://cybersentinel-orcin-nine.vercel.app** (Vercel) with `CYBERSENTINEL_DEMO_MODE=1`. In that mode the scanner only audits its own
+built-in test bench (`/mock/hardened`, `/mock/balanced`, `/mock/vulnerable`) and refuses every other target,
+so the public deployment can never be used to probe third-party sites. Scan history is stored in `/tmp`
+(`CYBERSENTINEL_DB_PATH`) and resets when the server restarts. To audit your own authorised sites, run
+CyberSentinel locally (Quick Start above), where demo mode is off.
+
 ## 5. Running Automated Verification Tests
 ```powershell
 pytest tests/test_scanners.py -v
