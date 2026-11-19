@@ -2,7 +2,12 @@ import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-DB_PATH = BASE_DIR / "cybersentinel.db"
+# Hosted deployments set CYBERSENTINEL_DB_PATH (e.g. /tmp/cybersentinel.db) because
+# their filesystem is read-only; locally the database stays next to the project.
+DB_PATH = Path(os.getenv("CYBERSENTINEL_DB_PATH", str(BASE_DIR / "cybersentinel.db")))
+
+# Hosted public demo: only the built-in /mock test bench may be scanned.
+DEMO_MODE = os.getenv("CYBERSENTINEL_DEMO_MODE") == "1"
 
 PROJECT_NAME = "CyberSentinel"
 VERSION = "1.0.0"
