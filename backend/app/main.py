@@ -33,6 +33,9 @@ app.add_middleware(
 def on_startup():
     init_db()
 
+# Serverless hosts may not run startup events; creating the tables is idempotent.
+init_db()
+
 # Mount API and Mock routes
 app.include_router(api_router)
 app.include_router(mock_router)
